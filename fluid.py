@@ -83,11 +83,11 @@ class pump(FluidBox):
 
 # ====================================
 def print_pipes(p):
-    print("\t       \t", " ".join("{:>5s}".format(k.short_name) for k in p))
-    print("\tvolume:\t", " ".join("{:>5.1f}".format(k.max_fluid_capacity()) for k in p))
-    print("\tbaseL:\t", " ".join("{:>5.1f}".format(k.base_level) for k in p))
-    print("\tamount:\t", " ".join("{:>5.1f}".format(k.amount) for k in p))
-    print("\tspeed:\t", " ".join("{:>5.1f}".format(k.speed) for k in p))
+    print("\t       \t", " ".join("{:>7s}".format(k.short_name) for k in p))
+    print("\tvolume:\t", " ".join("{:>7.1f}".format(k.max_fluid_capacity()) for k in p))
+    print("\tbaseL:\t", " ".join("{:>7.1f}".format(k.base_level) for k in p))
+    print("\tamount:\t", " ".join("{:>7.1f}".format(k.amount) for k in p))
+    print("\tspeed:\t", " ".join("{:>7.1f}".format(k.speed) for k in p))
 
 
 # ====================================
