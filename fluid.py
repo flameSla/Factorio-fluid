@@ -179,13 +179,13 @@ for tick in range(max_tick):
                     xmm4 = max(xmm4, xmm0)
                     debug("xmm4={0}".format(xmm4))
 
-                xmm6 -= xmm1
+                xmm6 -= xmm1  # (Pressure_A - Pressure_B)
                 debug("xmm6={0}".format(xmm6))
 
-                xmm6 *= 0.4
+                xmm6 *= 0.4  # (Pressure_A - Pressure_B) * 0.4
                 debug("xmm6={0}".format(xmm6))
 
-                xmm6 += xmm4
+                xmm6 += xmm4  # (Pressure_A - Pressure_B) * 0.4 + Limited[Previous_Flow * 0.59, Target_Capacity * 0.1]
                 debug("xmm6={0}".format(xmm6))
 
                 # s - how much liquid to move
