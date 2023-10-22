@@ -84,37 +84,23 @@ class pump(FluidBox):
 # ====================================
 def print_pipes(all_pipes):
     separator = " || "
-    line = ""
+    line1 = line2 = line3 = ""
+    line4 = line5 = line6 = ""
     for p in all_pipes:
-        line += " ".join("{:>8s}".format(k.short_name) for k in p) + separator
-    print("\t       \t", line)
-
-    line = ""
-    for p in all_pipes:
-        line += (
+        line1 += " ".join("{:>8s}".format(k.short_name) for k in p) + separator
+        line2 += (
             " ".join("{:>8.1f}".format(k.max_fluid_capacity()) for k in p) + separator
         )
-    print("\tvolume:\t", line)
-
-    line = ""
-    for p in all_pipes:
-        line += " ".join("{:>8.1f}".format(k.base_level) for k in p) + separator
-    print("\tbaseL:\t", line)
-
-    line = ""
-    for p in all_pipes:
-        line += " ".join("{:>8.1f}".format(k.amount) for k in p) + separator
-    print("\tamount:\t", line)
-
-    line = ""
-    for p in all_pipes:
-        line += " ".join("{:>8.1f}".format(k.speed) for k in p) + separator
-    print("\tspeed:\t", line)
-
-    line = ""
-    for p in all_pipes:
-        line += " ".join("{:>8.1f}".format(k.speed * 60.0) for k in p) + separator
-    print("\tspeed:\t", line)
+        line3 += " ".join("{:>8.1f}".format(k.base_level) for k in p) + separator
+        line4 += " ".join("{:>8.1f}".format(k.amount) for k in p) + separator
+        line5 += " ".join("{:>8.1f}".format(k.speed) for k in p) + separator
+        line6 += " ".join("{:>8.1f}".format(k.speed * 60.0) for k in p) + separator
+    print("\t       \t", line1)
+    print("\tvolume:\t", line2)
+    print("\tbaseL:\t", line3)
+    print("\tamount:\t", line4)
+    print("\tspeed:\t", line5)
+    print("\tspeed:\t", line6)
 
 
 # ====================================
@@ -251,7 +237,7 @@ print("tick = {0}".format(0))
 print_pipes(all_pipes)
 
 max_tick = 100
-print_every_N_ticks = 1
+print_every_N_ticks = 10
 for tick in range(max_tick):
     fluid_update(pipes1)
     fluid_update(pipes2)
