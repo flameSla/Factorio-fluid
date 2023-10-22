@@ -82,11 +82,28 @@ class pump(FluidBox):
 
 
 # ====================================
+class Segment:
+    def __init__(self, p, o=None):
+        self.pipes = p
+        if o is None:
+            self.order_of_construction = tuple(range(1, len(p)))
+        else:
+            self.order_of_construction = o
+
+        debug(
+            "self.order_of_construction = ",
+            type(self.order_of_construction),
+            self.order_of_construction,
+        )
+
+
+# ====================================
 def print_pipes(all_pipes):
     separator = " || "
     line1 = line2 = line3 = ""
     line4 = line5 = line6 = ""
-    for p in all_pipes:
+    for segment in all_pipes:
+        p = segment.pipes
         line1 += " ".join("{:>8s}".format(k.short_name) for k in p) + separator
         line2 += (
             " ".join("{:>8.1f}".format(k.max_fluid_capacity()) for k in p) + separator
@@ -95,84 +112,31 @@ def print_pipes(all_pipes):
         line4 += " ".join("{:>8.1f}".format(k.amount) for k in p) + separator
         line5 += " ".join("{:>8.1f}".format(k.speed) for k in p) + separator
         line6 += " ".join("{:>8.1f}".format(k.speed * 60.0) for k in p) + separator
-    print("\t       \t", line1)
-    print("\tvolume:\t", line2)
-    print("\tbaseL:\t", line3)
-    print("\tamount:\t", line4)
-    print("\tspeed:\t", line5)
-    print("\tspeed:\t", line6)
+    print("       \t", line1)
+    print("volume:\t", line2)
+    print("baseL:\t", line3)
+    print("amount:\t", line4)
+    print("speed:\t", line5)
+    print("speed:\t", line6)
+    print()
 
 
 # ====================================
-def fluid_update(pipes):
+def fluid_update(segment):
     global par_debugging
+    pipes = segment.pipes
     for p in pipes:
         if p.name == "offshore_pump":
             p.amount = 20.0
         if p.name == "inf_pipe":
             p.amount = 0.0
 
-    for i in range(1, len(pipes)):
-        # print(" i = {}".format(i))
-        if pipes[i].name == "pump":
-            # s - how much liquid to move
-            s = pipes[i].pumping_speed  # 200 - vanilla
-            if s > pipes[i - 1].amount:
-                s = pipes[i - 1].amount
-
-            if pipes[i].amount + s > pipes[i].max_fluid_capacity():
-                s = pipes[i].max_fluid_capacity() - pipes[i].amount
-
-            debug("s={0}".format(s))
-
-            pipes[i - 1].amount -= s
-            pipes[i].amount += s
-            pipes[i].speed = s
-        else:
-            # from IDA Free
-            # v15 = (v4->invertedBaseArea * amount + v4->baseLevel - (target->invertedBaseArea * v11 + target->baseLevel))
-            #     * 0.4000000059604645
-            #     + (float)(fminf(v4->volume * 0.1, v2->speed * 0.58999997) - fminf(volume * 0.1, *(float *)(v6 + 12) * 0.58999997));
-
-            # https://forums.factorio.com/viewtopic.php?f=18&t=19851
-            # Pressure_A
-            xmm6 = (
-                pipes[i - 1].amount / pipes[i - 1].base_area
-                + pipes[i - 1].base_level * 100
-            )
-            # Pressure_B
-            xmm1 = pipes[i].amount / pipes[i].base_area + pipes[i].base_level * 100
-            debug("{0} ========================".format(i))
-            debug("xmm6={0}, xmm1={1}".format(xmm6, xmm1))
-
-            # Limited[Previous_Flow * 0.59, Target_Capacity * 0.1]
-            if pipes[i].speed >= 0.0:
-                xmm4 = pipes[i - 1].max_fluid_capacity() * 0.1
-                xmm0 = pipes[i].speed * 0.58999997
-                debug("xmm4={0}, xmm0={1}".format(xmm4, xmm0))
-
-                xmm4 = min(xmm4, xmm0)
-                debug("xmm4={0}".format(xmm4))
-            else:
-                xmm4 = pipes[i].max_fluid_capacity() * -0.1
-                xmm0 = pipes[i].speed * 0.58999997
-                debug("xmm4={0}, xmm0={1}".format(xmm4, xmm0))
-
-                xmm4 = max(xmm4, xmm0)
-                debug("xmm4={0}".format(xmm4))
-
-            xmm6 -= xmm1  # (Pressure_A - Pressure_B)
-            debug("xmm6={0}".format(xmm6))
-
-            xmm6 *= 0.4  # (Pressure_A - Pressure_B) * 0.4
-            debug("xmm6={0}".format(xmm6))
-
-            xmm6 += xmm4  # (Pressure_A - Pressure_B) * 0.4 + Limited[Previous_Flow * 0.59, Target_Capacity * 0.1]
-            debug("xmm6={0}".format(xmm6))
-
-            # s - how much liquid to move
-            s = xmm6
-            if s >= 0.0:
+    for i in segment.order_of_construction:
+        if i > 0 and i < len(pipes):
+            # print(" i = {}".format(i))
+            if pipes[i].name == "pump":
+                # s - how much liquid to move
+                s = pipes[i].pumping_speed  # 200 - vanilla
                 if s > pipes[i - 1].amount:
                     s = pipes[i - 1].amount
 
@@ -185,21 +149,77 @@ def fluid_update(pipes):
                 pipes[i].amount += s
                 pipes[i].speed = s
             else:
-                s *= -1.0
-                if s > pipes[i].amount:
-                    s = pipes[i].amount
+                # from IDA Free
+                # v15 = (v4->invertedBaseArea * amount + v4->baseLevel - (target->invertedBaseArea * v11 + target->baseLevel))
+                #     * 0.4000000059604645
+                #     + (float)(fminf(v4->volume * 0.1, v2->speed * 0.58999997) - fminf(volume * 0.1, *(float *)(v6 + 12) * 0.58999997));
 
-                if pipes[i - 1].amount + s > pipes[i - 1].max_fluid_capacity():
-                    s = pipes[i - 1].max_fluid_capacity() - pipes[i - 1].amount
+                # https://forums.factorio.com/viewtopic.php?f=18&t=19851
+                # Pressure_A
+                xmm6 = (
+                    pipes[i - 1].amount / pipes[i - 1].base_area
+                    + pipes[i - 1].base_level * 100
+                )
+                # Pressure_B
+                xmm1 = pipes[i].amount / pipes[i].base_area + pipes[i].base_level * 100
+                debug("{0} ========================".format(i))
+                debug("xmm6={0}, xmm1={1}".format(xmm6, xmm1))
 
-                debug("s={0}".format(s))
+                # Limited[Previous_Flow * 0.59, Target_Capacity * 0.1]
+                if pipes[i].speed >= 0.0:
+                    xmm4 = pipes[i - 1].max_fluid_capacity() * 0.1
+                    xmm0 = pipes[i].speed * 0.58999997
+                    debug("xmm4={0}, xmm0={1}".format(xmm4, xmm0))
 
-                pipes[i - 1].amount += s
-                pipes[i].amount -= s
-                pipes[i].speed = -1.0 * s
+                    xmm4 = min(xmm4, xmm0)
+                    debug("xmm4={0}".format(xmm4))
+                else:
+                    xmm4 = pipes[i].max_fluid_capacity() * -0.1
+                    xmm0 = pipes[i].speed * 0.58999997
+                    debug("xmm4={0}, xmm0={1}".format(xmm4, xmm0))
 
-        if par_debugging:
-            print_pipes(pipes)
+                    xmm4 = max(xmm4, xmm0)
+                    debug("xmm4={0}".format(xmm4))
+
+                xmm6 -= xmm1  # (Pressure_A - Pressure_B)
+                debug("xmm6={0}".format(xmm6))
+
+                xmm6 *= 0.4  # (Pressure_A - Pressure_B) * 0.4
+                debug("xmm6={0}".format(xmm6))
+
+                xmm6 += xmm4  # (Pressure_A - Pressure_B) * 0.4 + Limited[Previous_Flow * 0.59, Target_Capacity * 0.1]
+                debug("xmm6={0}".format(xmm6))
+
+                # s - how much liquid to move
+                s = xmm6
+                if s >= 0.0:
+                    if s > pipes[i - 1].amount:
+                        s = pipes[i - 1].amount
+
+                    if pipes[i].amount + s > pipes[i].max_fluid_capacity():
+                        s = pipes[i].max_fluid_capacity() - pipes[i].amount
+
+                    debug("s={0}".format(s))
+
+                    pipes[i - 1].amount -= s
+                    pipes[i].amount += s
+                    pipes[i].speed = s
+                else:
+                    s *= -1.0
+                    if s > pipes[i].amount:
+                        s = pipes[i].amount
+
+                    if pipes[i - 1].amount + s > pipes[i - 1].max_fluid_capacity():
+                        s = pipes[i - 1].max_fluid_capacity() - pipes[i - 1].amount
+
+                    debug("s={0}".format(s))
+
+                    pipes[i - 1].amount += s
+                    pipes[i].amount -= s
+                    pipes[i].speed = -1.0 * s
+
+            if par_debugging:
+                print_pipes(pipes)
 
 
 # ====================================
@@ -210,27 +230,30 @@ pipes1.append(pipe())
 pipes1.append(pipe())
 pipes1.append(pipe())
 pipes1.append(inf_pipe())
-pipes1.append(pipe())
-pipes1.append(pipe())
-pipes1.append(pipe())
-pipes1.append(pipe())
-pipes1.append(offshore_pump())
 
 pipes2 = []
 pipes2.append(offshore_pump())
 pipes2.append(pipe())
-pipes2.append(storage_tank())
+pipes2.append(pipe())
+pipes2.append(pipe())
+pipes2.append(pipe())
+pipes2.append(inf_pipe())
 
 pipes3 = []
-pipes3.append(storage_tank(25000))
-pipes3.append(pump())
+pipes3.append(offshore_pump())
+pipes3.append(pipe())
 pipes3.append(storage_tank())
 
+pipes4 = []
+pipes4.append(storage_tank(25000))
+pipes4.append(pump())
+pipes4.append(storage_tank())
 
 all_pipes = []
-all_pipes.append(pipes1)
-all_pipes.append(pipes2)
-all_pipes.append(pipes3)
+all_pipes.append(Segment(pipes1))
+all_pipes.append(Segment(pipes2, (5, 4, 3, 2, 1)))
+all_pipes.append(Segment(pipes3))
+all_pipes.append(Segment(pipes4))
 
 
 print("tick = {0}".format(0))
