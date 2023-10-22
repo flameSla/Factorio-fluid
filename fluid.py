@@ -239,9 +239,8 @@ print_pipes(all_pipes)
 max_tick = 100
 print_every_N_ticks = 10
 for tick in range(max_tick):
-    fluid_update(pipes1)
-    fluid_update(pipes2)
-    fluid_update(pipes3)
+    for p in all_pipes:
+        fluid_update(p)
 
     if (tick + 1) % print_every_N_ticks == 0 or tick == 0 or tick == max_tick:
         print("tick = {0}".format(tick + 1))
